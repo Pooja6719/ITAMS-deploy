@@ -1,0 +1,632 @@
+/* =========================================================
+   RESET
+========================================================= */
+
+.ai-page,
+.ai-page * {
+  box-sizing: border-box;
+}
+
+.ai-page {
+  min-height: 100vh;
+  background: #f9fafb;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #111827;
+}
+
+
+/* =========================================================
+   NAVBAR
+========================================================= */
+
+.ai-nav {
+  height: 68px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 36px;
+
+  position: sticky;
+  top: 0;
+
+  z-index: 100;
+}
+
+
+.ai-nav-logo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+
+.ai-nav-title {
+  font-size: 27px;
+  font-weight: 800;
+  color: #1d4ed8;
+}
+
+
+.ai-nav-sub {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+
+.ai-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+
+.ai-nav-user {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+
+.ai-nav-divider {
+  color: #9ca3af;
+}
+
+
+.ai-logout-btn {
+  background: transparent;
+  border: none;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #111827;
+
+  cursor: pointer;
+}
+
+
+.ai-logout-btn:hover {
+  color: #1d4ed8;
+}
+
+
+/* =========================================================
+   BODY
+========================================================= */
+
+.ai-body {
+  width: 100%;
+  max-width: 1100px;
+
+  margin: 0 auto;
+
+  padding: 32px 24px 60px;
+}
+
+
+/* =========================================================
+   TITLE
+========================================================= */
+
+.ai-page-title {
+  font-size: 27px;
+  font-weight: 700;
+
+  margin: 0 0 6px;
+
+  color: #111827;
+}
+
+
+.ai-page-sub {
+  font-size: 13px;
+  font-weight: 500;
+
+  color: #4b5563;
+
+  margin: 0 0 22px;
+}
+
+
+/* =========================================================
+   SELECT SECTION
+========================================================= */
+
+.ai-select-section {
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+
+  padding: 16px;
+
+  margin-bottom: 18px;
+
+  min-height: 90px;
+}
+
+
+.ai-select-label {
+  display: block;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  color: #374151;
+
+  margin-bottom: 7px;
+}
+
+
+.ai-dropdown-wrapper {
+  position: relative;
+
+  width: 280px;
+}
+
+
+.ai-dropdown-btn {
+  width: 100%;
+
+  min-height: 38px;
+
+  padding: 9px 12px;
+
+  background: #ffffff;
+
+  border: 1px solid #9ca3af;
+
+  border-radius: 5px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  cursor: pointer;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #374151;
+
+  text-align: left;
+}
+
+
+.ai-dropdown-btn:hover {
+  border-color: #2563eb;
+}
+
+
+.ai-dropdown-arrow {
+  font-size: 12px;
+  color: #374151;
+}
+
+
+.ai-dropdown-list {
+  position: absolute;
+
+  top: calc(100% + 2px);
+  left: 0;
+
+  width: 100%;
+
+  background: #ffffff;
+
+  border: 1px solid #9ca3af;
+
+  border-radius: 4px;
+
+  list-style: none;
+
+  padding: 0;
+  margin: 0;
+
+  z-index: 500;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  overflow: hidden;
+}
+
+
+.ai-dropdown-item {
+  padding: 9px 12px;
+
+  font-size: 13px;
+
+  cursor: pointer;
+
+  color: #374151;
+
+  background: #ffffff;
+}
+
+
+.ai-dropdown-item:hover {
+  background: #eff6ff;
+}
+
+
+.ai-dropdown-item-active {
+  background: #dbeafe;
+
+  font-weight: 700;
+
+  color: #1d4ed8;
+}
+
+
+/* =========================================================
+   STATISTICS
+========================================================= */
+
+.ai-stats-row {
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, 1fr);
+
+  gap: 14px;
+
+  margin-bottom: 18px;
+}
+
+
+.ai-stat-card {
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 8px;
+
+  padding: 17px 18px;
+
+  min-height: 100px;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+
+  gap: 5px;
+}
+
+
+.ai-stat-label {
+  font-size: 11px;
+
+  font-weight: 700;
+
+  color: #374151;
+}
+
+
+.ai-stat-value {
+  font-size: 24px;
+
+  font-weight: 700;
+
+  color: #111827;
+
+  line-height: 1.1;
+}
+
+
+.ai-stat-sub {
+  font-size: 10px;
+
+  color: #6b7280;
+}
+
+
+/* =========================================================
+   CHARTS
+========================================================= */
+
+.ai-charts-row {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 18px;
+
+  margin-bottom: 18px;
+}
+
+
+.ai-chart-card {
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 8px;
+
+  padding: 18px;
+}
+
+
+.ai-chart-title {
+  font-size: 14px;
+
+  font-weight: 700;
+
+  margin: 0 0 16px;
+
+  color: #111827;
+}
+
+
+.ai-chart-body {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 20px;
+
+  min-height: 190px;
+}
+
+
+.ai-legend {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 11px;
+}
+
+
+.ai-legend-item {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+
+.ai-legend-dot {
+  width: 11px;
+  height: 11px;
+
+  border-radius: 2px;
+
+  flex-shrink: 0;
+}
+
+
+.ai-legend-text {
+  font-size: 11px;
+
+  color: #374151;
+
+  white-space: nowrap;
+}
+
+
+.ai-chart-footer {
+  text-align: center;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  color: #374151;
+
+  margin: 8px 0 0;
+}
+
+
+/* =========================================================
+   TABLE CARD
+========================================================= */
+
+.ai-table-card {
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 8px;
+
+  padding: 18px;
+
+  margin-bottom: 18px;
+}
+
+
+.ai-table-title {
+  font-size: 14px;
+
+  font-weight: 700;
+
+  color: #111827;
+
+  margin: 0 0 14px;
+}
+
+
+.ai-table-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+}
+
+
+.ai-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  font-size: 11px;
+}
+
+
+.ai-table thead {
+  background: #f3f4f6;
+}
+
+
+.ai-table th {
+  padding: 10px 12px;
+
+  text-align: left;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  color: #374151;
+
+  border-bottom: 1px solid #e5e7eb;
+
+  white-space: nowrap;
+}
+
+
+.ai-table td {
+  padding: 10px 12px;
+
+  color: #374151;
+
+  border-bottom: 1px solid #f1f5f9;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+}
+
+
+.ai-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+
+.ai-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.ai-status-badge {
+  display: inline-block;
+
+  padding: 4px 9px;
+
+  border-radius: 12px;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   TOTAL ROW
+========================================================= */
+
+.ai-total-row {
+  font-weight: 700;
+
+  background: #f9fafb;
+}
+
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+
+.ai-back-container {
+  display: flex;
+
+  justify-content: center;
+
+  margin-top: 20px;
+}
+
+
+.ai-back-btn {
+  padding: 9px 28px;
+
+  background: #ffffff;
+
+  border: 1px solid #d1d5db;
+
+  border-radius: 7px;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  color: #111827;
+
+  cursor: pointer;
+}
+
+
+.ai-back-btn:hover {
+  background: #f3f4f6;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .ai-stats-row {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .ai-charts-row {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .ai-nav {
+    padding: 0 15px;
+  }
+
+  .ai-body {
+    padding: 22px 14px 40px;
+  }
+
+  .ai-nav-right {
+    gap: 7px;
+  }
+
+  .ai-nav-user {
+    display: none;
+  }
+
+  .ai-stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-dropdown-wrapper {
+    width: 100%;
+  }
+
+  .ai-chart-body {
+    flex-direction: column;
+  }
+
+}
