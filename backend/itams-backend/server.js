@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const { testConnection } = require("./src/config/db");
 const { verifyEmailTransport } = require("./src/utils/email");
@@ -31,6 +32,25 @@ app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/asset-requests", assetRequestRoutes);
 app.use("/api/asset-assignments", assetAssignmentRoutes);
 app.use("/api/inventory", inventoryRoutes);
+// ==========================================
+// SERVE REACT FRONTEND
+// ==========================================
+
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("*", (req, res, next) => {
+  // Let unknown API requests go to the API 404 handler
+  if (req.path.startsWith("/api")) {
+    return next();
+  }
+
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+
+// ==========================================
+// ERROR HANDLING
+// ==========================================
 
 app.use(notFound);
 app.use(errorHandler);
