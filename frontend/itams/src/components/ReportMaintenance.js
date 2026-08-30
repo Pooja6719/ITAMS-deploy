@@ -348,7 +348,7 @@ const ReportMaintenance = ({
   // =====================================================
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:5000/api/maintenance", {
+    fetch("/api/maintenance", {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -432,7 +432,7 @@ const ReportMaintenance = ({
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/maintenance", {
+      const response = await fetch("/api/maintenance", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -454,7 +454,7 @@ const ReportMaintenance = ({
       alert("✅ Maintenance request submitted successfully!");
 
       // Reload reports list
-      const refreshResp = await fetch("http://localhost:5000/api/maintenance", {
+      const refreshResp = await fetch("/api/maintenance", {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       });
       const refreshData = await refreshResp.json();

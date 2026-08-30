@@ -129,7 +129,7 @@ const AssetInventory = ({
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:5000/api/inventory", {
+    fetch("/api/inventory", {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())

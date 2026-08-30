@@ -311,7 +311,7 @@ const EmployeeStatus = ({
     const fetchEmployees = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:5000/api/employees", {
+        const response = await fetch("/api/employees", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -684,7 +684,7 @@ const EmployeeStatus = ({
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/employees/${empId}/status`,
+        `/api/employees/${empId}/status`,
         {
           method: "PATCH",
           headers: {

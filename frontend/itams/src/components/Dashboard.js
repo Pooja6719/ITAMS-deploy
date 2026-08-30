@@ -22,7 +22,7 @@ const Dashboard = ({
     const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
     // Inventory for stat cards + overview table
-    fetch("http://localhost:5000/api/inventory", { headers })
+    fetch("/api/inventory", { headers })
       .then((r) => r.json())
       .then((data) => {
         if (!data.success) return;
@@ -49,7 +49,7 @@ const Dashboard = ({
       .catch(() => {});
 
     // Pending requests count
-    fetch("http://localhost:5000/api/asset-requests?status=Pending", { headers })
+    fetch("/api/asset-requests?status=Pending", { headers })
       .then((r) => r.json())
       .then((data) => {
         if (data.success) setStats((prev) => ({ ...prev, pending: (data.requests || []).length }));
@@ -57,7 +57,7 @@ const Dashboard = ({
       .catch(() => {});
 
     // Recent activity from assignment history
-    fetch("http://localhost:5000/api/asset-assignments/history", { headers })
+    fetch("/api/asset-assignments/history", { headers })
       .then((r) => r.json())
       .then((data) => {
         if (!data.success) return;

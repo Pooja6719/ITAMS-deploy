@@ -467,7 +467,7 @@ const AssetRequest = ({
   // Load request history on mount
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:5000/api/asset-requests", {
+    fetch("/api/asset-requests", {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -642,7 +642,7 @@ const AssetRequest = ({
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/asset-requests", {
+      const response = await fetch("/api/asset-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -664,7 +664,7 @@ const AssetRequest = ({
       handleCancel();
 
       // Reload request history
-      const refreshResp = await fetch("http://localhost:5000/api/asset-requests", {
+      const refreshResp = await fetch("/api/asset-requests", {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       });
       const refreshData = await refreshResp.json();

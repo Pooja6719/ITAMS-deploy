@@ -293,7 +293,7 @@ const DepartmentManagement = ({
     const fetchDepartments = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:5000/api/departments", {
+        const response = await fetch("/api/departments", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -381,7 +381,7 @@ const DepartmentManagement = ({
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/departments?search=${encodeURIComponent(search)}`,
+        `/api/departments?search=${encodeURIComponent(search)}`,
         {
           method: "GET",
           headers: {
@@ -521,7 +521,7 @@ const DepartmentManagement = ({
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/departments", {
+      const response = await fetch("/api/departments", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -549,7 +549,7 @@ const DepartmentManagement = ({
       }
 
       // Refresh departments list
-      const refreshResponse = await fetch("http://localhost:5000/api/departments", {
+      const refreshResponse = await fetch("/api/departments", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

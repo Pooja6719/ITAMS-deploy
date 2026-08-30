@@ -416,7 +416,7 @@ const ViewEmployeeList = ({
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:5000/api/employees", {
+        const response = await fetch("/api/employees", {
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -452,7 +452,7 @@ const ViewEmployeeList = ({
   const fetchEmployeeById = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:5000/api/employees/${id}`, {
+      const response = await fetch(`/api/employees/${id}`, {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       });
       const data = await response.json();

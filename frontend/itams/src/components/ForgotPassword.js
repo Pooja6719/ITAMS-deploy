@@ -439,7 +439,7 @@ export default function ForgotPassword({
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/forgot-password/send-otp",
+        "/api/forgot-password/send-otp",
         {
           method: "POST",
 
@@ -511,7 +511,7 @@ export default function ForgotPassword({
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/forgot-password/verify-otp",
+        "/api/forgot-password/verify-otp",
         {
           method: "POST",
 
@@ -608,7 +608,7 @@ export default function ForgotPassword({
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/forgot-password/reset",
+        "/api/forgot-password/reset",
         {
           method: "POST",
 

@@ -415,7 +415,7 @@ const UpdateEmployee = ({
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/employees/${searchInput}`,
+        `/api/employees/${searchInput}`,
         {
           method: "GET",
           headers: {
@@ -559,7 +559,7 @@ const UpdateEmployee = ({
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/employees/${formData.id}`,
+        `/api/employees/${formData.id}`,
         {
           method: "PUT",
           headers: {

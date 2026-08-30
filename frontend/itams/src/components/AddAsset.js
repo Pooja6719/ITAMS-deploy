@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./AddAsset.css";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "/api";
 
 const AddAsset = ({
   username = "username",

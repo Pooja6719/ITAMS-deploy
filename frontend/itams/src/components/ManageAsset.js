@@ -16,7 +16,7 @@ const ASSET_TYPES = [
 
 const ROWS_PER_PAGE_OPTIONS = [10, 30, 50, "All"];
 
-const API_URL = "http://localhost:5000/api/assets";
+const API_URL = "/api/assets";
 
 /* =========================================================
    ASSET TYPE PREFIX

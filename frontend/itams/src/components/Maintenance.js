@@ -22,7 +22,7 @@ const Maintenance = ({
     try {
       const token = localStorage.getItem("token");
       const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-      const resp = await fetch("http://localhost:5000/api/maintenance", { headers });
+      const resp = await fetch("/api/maintenance", { headers });
       const data = await resp.json();
       if (!data.success) return;
 
@@ -55,7 +55,7 @@ const Maintenance = ({
   const updateStatus = async (requestId, newStatus) => {
     try {
       const token = localStorage.getItem("token");
-      const resp = await fetch(`http://localhost:5000/api/maintenance/${requestId}/status`, {
+      const resp = await fetch(`/api/maintenance/${requestId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: newStatus }),
