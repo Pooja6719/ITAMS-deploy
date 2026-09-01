@@ -1,7 +1,7 @@
 require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 
 const { testConnection } = require("./src/config/db");
 const { verifyEmailTransport } = require("./src/utils/email");
@@ -18,11 +18,42 @@ const inventoryRoutes = require("./src/routes/inventoryRoutes");
 
 const app = express();
 
-const allowedOrigins = (process.env.CLIENT_ORIGIN || "").split(",").map((s) => s.trim());
-app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : "*", credentials: true }));
+// ==========================================
+// CORS
+// ==========================================
+
+const allowedOrigins = (process.env.CLIENT_ORIGIN || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: allowedOrigins.length ? allowedOrigins : true,
+    credentials: true,
+  })
+);
+
+// ==========================================
+// MIDDLEWARE
+// ==========================================
+
 app.use(express.json());
 
-app.get("/api/health", (req, res) => res.json({ success: true, message: "ITAMS API is running" }));
+// ==========================================
+// HEALTH CHECK
+// ==========================================
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    message: "ITAMS API is running",
+  });
+});
+
+// ==========================================
+// API ROUTES
+// ==========================================
 
 app.use("/api", authRoutes);
 app.use("/api/employees", employeeRoutes);
@@ -32,21 +63,6 @@ app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/asset-requests", assetRequestRoutes);
 app.use("/api/asset-assignments", assetAssignmentRoutes);
 app.use("/api/inventory", inventoryRoutes);
-// ==========================================
-// SERVE REACT FRONTEND
-// ==========================================
-
-app.use(express.static(path.join(__dirname, "public")));
-
-app.get("*", (req, res, next) => {
-  // Let unknown API requests go to the API 404 handler
-  if (req.path.startsWith("/api")) {
-    return next();
-  }
-
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
 
 // ==========================================
 // ERROR HANDLING
@@ -55,10 +71,23 @@ app.get("*", (req, res, next) => {
 app.use(notFound);
 app.use(errorHandler);
 
+// ==========================================
+// SERVER
+// ==========================================
+
 const PORT = process.env.PORT || 5000;
 
 (async () => {
-  await testConnection();
-  app.listen(PORT, () => console.log(`🚀 ITAMS API listening on port ${PORT}`));
-  verifyEmailTransport();
+  try {
+    await testConnection();
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log("ITAMS API listening on port " + PORT);
+    });
+
+    verifyEmailTransport();
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
 })();
