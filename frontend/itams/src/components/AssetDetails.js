@@ -126,7 +126,7 @@ const AssetDetails = ({
       }
 
       const response = await fetch(
-        "/api/assets",
+        "https://itams-app-production.up.railway.app/api/assets",
         {
           method: "GET",
           headers: {

@@ -13,7 +13,7 @@ RUN npm install --omit=dev --no-audit --no-fund
 COPY backend/itams-backend/ .
 
 # Railway/Render/Docker will provide the PORT
-EXPOSE 5000
+EXPOSE 8080
 
 # Start backend
 CMD ["npm", "start"]
