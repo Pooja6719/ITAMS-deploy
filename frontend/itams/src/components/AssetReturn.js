@@ -118,7 +118,7 @@ const AssetReturn = ({ username = "username", onLogout, onBack }) => {
       const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
       const resp = await fetch(
-        "http://localhost:5000/api/asset-assignments/history",
+        "http://https://itams-app-production.up.railway.app/api/asset-assignments/history",
         { headers }
       );
       const data = await resp.json();
@@ -405,7 +405,7 @@ const AssetReturn = ({ username = "username", onLogout, onBack }) => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/asset-assignments/${selectedAsset.assignmentId}/return`,
+        `http://https://itams-app-production.up.railway.app/api/asset-assignments/${selectedAsset.assignmentId}/return`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

@@ -433,7 +433,7 @@ const AddEmployee = ({ username = "username", onLogout, onBack }) => {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "http://localhost:5000/api/employees",
+        "http://https://itams-app-production.up.railway.app/api/employees",
         {
           method: "POST",
           headers: {
