@@ -170,11 +170,21 @@ const validateEmployeeCount = (count) => {
 
   const number = Number(count);
 
-  if (number > 1000) {
+  // Minimum 1
+  if (number < 1) {
     return {
       isValid: false,
       message:
-        "Number of Employees cannot exceed 1000",
+        "Number of Employees must be at least 1",
+    };
+  }
+
+  // Maximum 100
+  if (number > 100) {
+    return {
+      isValid: false,
+      message:
+        "Number of Employees cannot exceed 100",
     };
   }
 
@@ -213,13 +223,16 @@ const validateSearch = (search) => {
   }
 
   // ===================================================
-  // MULTIPLE SPACES ARE ALLOWED
+  // ONLY A SINGLE SPACE IS ALLOWED BETWEEN WORDS
   // ===================================================
 
-  // NO multiple-space validation here.
-  // Example:
-  // Information Technology       Department
-  // is allowed.
+  if (/\s{2,}/.test(search)) {
+    return {
+      isValid: false,
+      message:
+        "Only a single space is allowed between words",
+    };
+  }
 
   if (search.length < 2) {
     return {
@@ -293,7 +306,7 @@ const DepartmentManagement = ({
     const fetchDepartments = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("/api/departments", {
+        const response = await fetch("http://localhost:5000/api/departments", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -321,6 +334,7 @@ const DepartmentManagement = ({
   // =====================================================
   // GENERATE DEPARTMENT ID
   // =====================================================
+  // eslint-disable-next-line no-unused-vars
   const generateDepartmentId = () => {
     const nextNumber = departments.length + 1;
 
@@ -331,7 +345,7 @@ const DepartmentManagement = ({
   // SEARCH INPUT CHANGE
   // =====================================================
   const handleSearchChange = (e) => {
-    const value = e.target.value;
+    let value = e.target.value;
 
     // ===================================================
     // ONLY LETTERS AND SPACES ARE ALLOWED WHILE TYPING
@@ -342,6 +356,9 @@ const DepartmentManagement = ({
     if (!/^[A-Za-z ]*$/.test(value)) {
       return;
     }
+
+    // collapse multiple spaces into a single space
+    value = value.replace(/ {2,}/g, " ");
 
     setSearch(value);
     setSearchTouched(false);
@@ -381,7 +398,7 @@ const DepartmentManagement = ({
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `/api/departments?search=${encodeURIComponent(search)}`,
+        `http://localhost:5000/api/departments?search=${encodeURIComponent(search)}`,
         {
           method: "GET",
           headers: {
@@ -494,6 +511,36 @@ const DepartmentManagement = ({
     };
 
   // =====================================================
+  // EMPLOYEE COUNT CHANGE HANDLER
+  // Blocks minus sign and any non-digit character while typing
+  // =====================================================
+  const handleEmployeeCountChange = (e) => {
+    const value = e.target.value;
+
+    // Only allow digits (blocks "-", "+", ".", letters, etc.)
+    if (!/^[0-9]*$/.test(value)) {
+      return;
+    }
+
+    setEmployeeCount(value);
+
+    if (value === "") {
+      setErrors((prev) => ({
+        ...prev,
+        employeeCount: "",
+      }));
+      return;
+    }
+
+    const result = validateEmployeeCount(value);
+
+    setErrors((prev) => ({
+      ...prev,
+      employeeCount: result.isValid ? "" : result.message,
+    }));
+  };
+
+  // =====================================================
   // ADD DEPARTMENT
   // =====================================================
   const addDepartment = async () => {
@@ -521,7 +568,7 @@ const DepartmentManagement = ({
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/departments", {
+      const response = await fetch("http://localhost:5000/api/departments", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -549,7 +596,7 @@ const DepartmentManagement = ({
       }
 
       // Refresh departments list
-      const refreshResponse = await fetch("/api/departments", {
+      const refreshResponse = await fetch("http://localhost:5000/api/departments", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -763,11 +810,7 @@ const DepartmentManagement = ({
                 inputMode="numeric"
                 placeholder="Number of Employees"
                 value={employeeCount}
-                onChange={handleFieldChange(
-                  setEmployeeCount,
-                  "employeeCount",
-                  validateEmployeeCount
-                )}
+                onChange={handleEmployeeCountChange}
               />
 
               {errors.employeeCount && (
