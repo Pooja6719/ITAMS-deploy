@@ -1,0 +1,347 @@
+const { pool } = require("../config/db");
+const { generateAssignmentId, acquireIdLock } = require("../utils/idGenerator");
+const { validateAssetReturnPayload } = require("../utils/validators");
+
+async function getPending(req, res, next) {
+  try {
+    const { employeeId } = req.query;
+    const params = [];
+    let query = `
+      SELECT r.request_id, r.employee_id, e.employee_name, e.department,
+             r.asset_type, r.purpose, r.required_date, r.approval_date
+      FROM asset_requests r
+      JOIN employees e ON e.employee_id = r.employee_id
+      WHERE r.status = 'Approved'
+        AND NOT EXISTS (SELECT 1 FROM asset_assignments a WHERE a.request_id = r.request_id)
+    `;
+    if (employeeId) {
+      params.push(employeeId);
+      query += ` AND r.employee_id = $${params.length}`;
+    }
+    query += " ORDER BY r.approval_date ASC";
+
+    const { rows } = await pool.query(query, params);
+    res.json({ success: true, pending: rows });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getHistory(req, res, next) {
+  try {
+    const { rows } = await pool.query(`
+      SELECT a.assignment_id, a.request_id, a.employee_id, e.employee_name,
+             ast.asset_id, ast.asset_type,
+             CONCAT(COALESCE(ast.model, ast.asset_type), ' (', ast.asset_id, ')') AS asset_name_id,
+             a.assigned_date, a.returned_date, a.condition, a.remarks, a.status
+      FROM asset_assignments a
+      JOIN employees e ON e.employee_id = a.employee_id
+      JOIN assets ast ON ast.asset_id = a.asset_id
+      ORDER BY a.id DESC
+    `);
+    res.json({ success: true, history: rows });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getAvailableAssets(req, res, next) {
+  try {
+    const { type } = req.query;
+    const params = ["Not In Use"];
+    // "Not In Use" only means no one currently holds it - it says nothing
+    // about whether it's actually working. An asset returned normally
+    // (not marked Damaged/Faulty) still shows "Not In Use" even if it has
+    // an older, still-open maintenance ticket nobody ever resolved, so
+    // exclude those too instead of handing a flagged-broken asset to a
+    // new employee.
+    // Picking by asset_id order meant whichever asset happened to have the
+    // lowest ID got handed out every single time it became free again,
+    // instead of spreading use across the fleet - e.g. LAP001 kept getting
+    // reassigned over and over just because it sorts first. Order by how
+    // long each asset has actually been sitting idle instead: the most
+    // recent time it was returned (or, for one that's never been assigned
+    // at all, when it was added) - oldest first, so the asset that's been
+    // idle longest is offered before one that just became free.
+    let query = `
+      SELECT a.asset_id, a.asset_type, a.model FROM assets a
+      LEFT JOIN (
+        SELECT asset_id, MAX(returned_date) AS last_returned
+        FROM asset_assignments
+        WHERE status = 'Returned'
+        GROUP BY asset_id
+      ) r ON r.asset_id = a.asset_id
+      WHERE a.status = $1
+      AND NOT EXISTS (
+        SELECT 1 FROM maintenance_requests m
+        WHERE m.asset_id = a.asset_id AND m.status IN ('Pending', 'In Progress')
+      )
+    `;
+    if (type) {
+      params.push(type);
+      query += ` AND a.asset_type = $${params.length}`;
+    }
+    query += " ORDER BY COALESCE(r.last_returned, a.created_at) ASC";
+    const { rows } = await pool.query(query, params);
+    res.json({ success: true, assets: rows });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function assignAsset(req, res, next) {
+  const client = await pool.connect();
+  try {
+    const { requestId, assetId } = req.body;
+    if (!requestId || !assetId) {
+      return res.status(400).json({ success: false, message: "requestId and assetId are required" });
+    }
+
+    // Everything from here runs inside one transaction with the asset row
+    // locked (SELECT ... FOR UPDATE) — without this, two near-simultaneous
+    // requests for the same asset (e.g. a double-click on "Assign") can both
+    // read status='Not In Use' before either commits, and both succeed,
+    // leaving the same physical asset with two active assignment rows.
+    await client.query("BEGIN");
+
+    const assetRows = await client.query(
+      "SELECT * FROM assets WHERE asset_id = $1 AND status = 'Not In Use' FOR UPDATE",
+      [assetId]
+    );
+    if (assetRows.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ success: false, message: "Asset not found or not available for assignment" });
+    }
+
+    // Backstop for the same check getAvailableAssets does - this is the
+    // authoritative assignment path, so it can't just trust that whatever
+    // called it already filtered out assets with an open maintenance ticket.
+    const openTicket = await client.query(
+      `SELECT request_id FROM maintenance_requests WHERE asset_id = $1 AND status IN ('Pending', 'In Progress')`,
+      [assetId]
+    );
+    if (openTicket.rows.length > 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: `This asset has an open maintenance request (${openTicket.rows[0].request_id}) and can't be assigned.`,
+      });
+    }
+
+    const reqRows = await client.query(
+      "SELECT * FROM asset_requests WHERE request_id = $1 AND status = 'Approved' FOR UPDATE",
+      [requestId]
+    );
+    if (reqRows.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ success: false, message: "Request not found or not approved" });
+    }
+    const existing = await client.query("SELECT id FROM asset_assignments WHERE request_id = $1", [requestId]);
+    if (existing.rows.length > 0) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ success: false, message: "This request has already been assigned" });
+    }
+
+    const employeeId = reqRows.rows[0].employee_id;
+
+    // Lock held for the rest of this transaction so two concurrent
+    // assignments can never compute the same assignmentId (see idGenerator.js).
+    await acquireIdLock(client, "assignment");
+    const assignmentId = await generateAssignmentId(client);
+
+    await client.query(
+      `INSERT INTO asset_assignments (assignment_id, request_id, employee_id, asset_id, assigned_date)
+       VALUES ($1, $2, $3, $4, NOW())`,
+      [assignmentId, requestId, employeeId, assetId]
+    );
+    await client.query(
+      "UPDATE assets SET status = 'In Use', assigned_to = $1 WHERE asset_id = $2",
+      [employeeId, assetId]
+    );
+    await client.query("COMMIT");
+
+    res.status(201).json({ success: true, message: "Asset assigned successfully", assignmentId });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    if (err.code === "23505") {
+      // Distinguish which constraint actually fired - both share the same
+      // Postgres error code, but mean very different things to the user.
+      if (err.constraint === "idx_one_active_assignment_per_asset") {
+        return res.status(409).json({ success: false, message: "This asset is already assigned to someone." });
+      }
+      return res.status(409).json({ success: false, message: "Assignment ID already exists, please try again" });
+    }
+    next(err);
+  } finally {
+    client.release();
+  }
+}
+
+// POST /api/asset-assignments/reassign  { assignmentId, employeeId, assetId }
+async function reassignAsset(req, res, next) {
+  const client = await pool.connect();
+  try {
+    const { assignmentId, employeeId, assetId } = req.body;
+
+    if (!assignmentId || !employeeId) {
+      return res.status(400).json({ success: false, message: "assignmentId and employeeId are required" });
+    }
+
+    // Same TOCTOU concern as assignAsset: lock rows inside the transaction
+    // instead of checking availability before BEGIN, so a duplicate-submit
+    // can't reassign the same target asset to two different assignments.
+    await client.query("BEGIN");
+
+    const assignmentResult = await client.query(
+      "SELECT * FROM asset_assignments WHERE assignment_id = $1 AND status = 'Assigned' FOR UPDATE",
+      [assignmentId]
+    );
+    if (assignmentResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ success: false, message: "Active assignment not found" });
+    }
+
+    const currentAssignment = assignmentResult.rows[0];
+    const targetAssetId = assetId || currentAssignment.asset_id;
+
+    const employeeResult = await client.query("SELECT employee_id FROM employees WHERE employee_id = $1", [employeeId]);
+    if (employeeResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ success: false, message: "Employee does not exist" });
+    }
+
+    const assetResult = await client.query("SELECT * FROM assets WHERE asset_id = $1 FOR UPDATE", [targetAssetId]);
+    if (assetResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ success: false, message: "Asset not found" });
+    }
+    // If reassigning to a DIFFERENT physical asset, that asset must actually be
+    // free right now — otherwise this would silently steal it from whoever
+    // currently holds it without closing out their assignment.
+    if (targetAssetId !== currentAssignment.asset_id && assetResult.rows[0].status !== "Not In Use") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ success: false, message: "Target asset is not available for assignment" });
+    }
+
+    // Same open-maintenance-ticket backstop as assignAsset - "Not In Use"
+    // alone doesn't mean the asset is actually working.
+    if (targetAssetId !== currentAssignment.asset_id) {
+      const openTicket = await client.query(
+        `SELECT request_id FROM maintenance_requests WHERE asset_id = $1 AND status IN ('Pending', 'In Progress')`,
+        [targetAssetId]
+      );
+      if (openTicket.rows.length > 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          success: false,
+          message: `This asset has an open maintenance request (${openTicket.rows[0].request_id}) and can't be assigned.`,
+        });
+      }
+    }
+
+    await client.query(
+      "UPDATE asset_assignments SET returned_date = NOW(), status = 'Returned' WHERE assignment_id = $1",
+      [assignmentId]
+    );
+    await client.query("UPDATE assets SET status = 'Not In Use', assigned_to = NULL WHERE asset_id = $1", [currentAssignment.asset_id]);
+
+    // Lock held for the rest of this transaction so two concurrent
+    // reassignments can never compute the same assignmentId (see idGenerator.js).
+    await acquireIdLock(client, "assignment");
+    const newAssignmentId = await generateAssignmentId(client);
+    await client.query(
+      `INSERT INTO asset_assignments (assignment_id, request_id, employee_id, asset_id, assigned_date, status)
+       VALUES ($1, $2, $3, $4, NOW(), 'Assigned')`,
+      [newAssignmentId, currentAssignment.request_id, employeeId, targetAssetId]
+    );
+    await client.query(
+      "UPDATE assets SET status = 'In Use', assigned_to = $1 WHERE asset_id = $2",
+      [employeeId, targetAssetId]
+    );
+
+    await client.query("COMMIT");
+    res.status(201).json({ success: true, message: "Asset reassigned successfully", assignmentId: newAssignmentId });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    if (err.code === "23505") {
+      // Distinguish which constraint actually fired - both share the same
+      // Postgres error code, but mean very different things to the user.
+      if (err.constraint === "idx_one_active_assignment_per_asset") {
+        return res.status(409).json({ success: false, message: "This asset is already assigned to someone." });
+      }
+      return res.status(409).json({ success: false, message: "Assignment ID already exists, please try again" });
+    }
+    next(err);
+  } finally {
+    client.release();
+  }
+}
+
+// POST /api/asset-assignments/:assignmentId/return  { returnDate, condition, remarks }
+// A Damaged/Faulty return goes to 'Under Maintenance' instead of straight
+// back to 'Not In Use' — it shouldn't look available for reassignment until
+// someone's actually looked at it.
+async function returnAsset(req, res, next) {
+  const client = await pool.connect();
+  try {
+    const { assignmentId } = req.params;
+    const { returnDate, condition, remarks } = req.body;
+
+    const validationError = validateAssetReturnPayload({ returnDate, condition, remarks });
+    if (validationError) {
+      return res.status(400).json({ success: false, message: validationError });
+    }
+
+    // Same TOCTOU concern as assignAsset/reassignAsset: lock the row inside
+    // the transaction instead of checking status before BEGIN, so a
+    // duplicate-submit (double-click, retry) can't return the same
+    // assignment twice with two different conditions — whichever commits
+    // last would otherwise silently overwrite the other's condition/remarks
+    // with no error to either caller.
+    await client.query("BEGIN");
+
+    const assignmentResult = await client.query(
+      "SELECT * FROM asset_assignments WHERE assignment_id = $1 AND status = 'Assigned' FOR UPDATE",
+      [assignmentId]
+    );
+    if (assignmentResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ success: false, message: "Active assignment not found" });
+    }
+    const assignment = assignmentResult.rows[0];
+
+    const assignedDate = new Date(assignment.assigned_date); assignedDate.setHours(0, 0, 0, 0);
+    const rDate = new Date(returnDate); rDate.setHours(0, 0, 0, 0);
+    if (rDate < assignedDate) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ success: false, message: "Return Date cannot be before Assigned Date" });
+    }
+
+    const newAssetStatus = condition === "Good" ? "Not In Use" : "Under Maintenance";
+
+    // returnDate is validated above as a sanity check on what the caller
+    // claims, but the stored returned_date is NOW() — the actual moment this
+    // was recorded — same reasoning as report_date on maintenance requests:
+    // a client-supplied date has no time component, so trusting it verbatim
+    // would leave returned_date permanently stuck at midnight.
+    await client.query(
+      `UPDATE asset_assignments SET status = 'Returned', returned_date = NOW(), condition = $1, remarks = $2
+       WHERE assignment_id = $3`,
+      [condition, remarks ? remarks.trim() : null, assignmentId]
+    );
+    await client.query(
+      "UPDATE assets SET status = $1, assigned_to = NULL WHERE asset_id = $2",
+      [newAssetStatus, assignment.asset_id]
+    );
+    await client.query("COMMIT");
+
+    res.json({ success: true, message: "Asset returned successfully" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    next(err);
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { getPending, getHistory, getAvailableAssets, assignAsset, reassignAsset, returnAsset };
