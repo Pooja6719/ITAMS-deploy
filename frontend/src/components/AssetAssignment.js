@@ -245,8 +245,8 @@ const AssetAssignment = ({
     const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
     try {
       const [pendResp, histResp] = await Promise.all([
-        fetch("http://localhost:5000/api/asset-assignments/pending", { headers }),
-        fetch("http://localhost:5000/api/asset-assignments/history", { headers }),
+        fetch("https://itams-app-production.up.railway.app/api/asset-assignments/pending", { headers }),
+        fetch("https://itams-app-production.up.railway.app/api/asset-assignments/history", { headers }),
       ]);
       const pendData = await pendResp.json();
       const histData = await histResp.json();
@@ -417,7 +417,7 @@ const AssetAssignment = ({
 
       // Fetch first available asset of the required type
       const availResp = await fetch(
-        `http://localhost:5000/api/asset-assignments/available-assets?type=${encodeURIComponent(selectedRequest.assetType)}`,
+        `https://itams-app-production.up.railway.app/api/asset-assignments/available-assets?type=${encodeURIComponent(selectedRequest.assetType)}`,
         { headers }
       );
       const availData = await availResp.json();
@@ -430,7 +430,7 @@ const AssetAssignment = ({
 
       const assetId = available[0].asset_id;
 
-      const response = await fetch("http://localhost:5000/api/asset-assignments", {
+      const response = await fetch("https://itams-app-production.up.railway.app/api/asset-assignments", {
         method: "POST",
         headers,
         body: JSON.stringify({ requestId: selectedRequest.requestId, assetId }),

@@ -184,7 +184,7 @@ const ViewEmployeeList = ({
           localStorage.getItem("token");
 
         const response = await fetch(
-          "http://localhost:5000/api/employees",
+          "https://itams-app-production.up.railway.app/api/employees",
           {
             method: "GET",
             headers: {
@@ -232,7 +232,7 @@ const ViewEmployeeList = ({
         localStorage.getItem("token");
 
       const response = await fetch(
-        `http://localhost:5000/api/employees/${id}`,
+        `https://itams-app-production.up.railway.app/api/employees/${id}`,
         {
           method: "GET",
           headers: {

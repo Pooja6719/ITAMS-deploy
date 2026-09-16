@@ -413,7 +413,7 @@ const UpdateEmployee = ({
   // a department there is immediately reflected in this dropdown.
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:5000/api/departments", {
+    fetch("https://itams-app-production.up.railway.app/api/departments", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -492,7 +492,7 @@ const UpdateEmployee = ({
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/employees/${searchInput}`,
+        `https://itams-app-production.up.railway.app/api/employees/${searchInput}`,
         {
           method: "GET",
           headers: {
@@ -654,7 +654,7 @@ const UpdateEmployee = ({
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/employees/${formData.id}`,
+        `https://itams-app-production.up.railway.app/api/employees/${formData.id}`,
         {
           method: "PUT",
           headers: {

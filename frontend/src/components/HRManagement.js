@@ -22,7 +22,7 @@ const HRManagement = ({
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:5000/api/employees/stats/summary", {
+    fetch("https://itams-app-production.up.railway.app/api/employees/stats/summary", {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
