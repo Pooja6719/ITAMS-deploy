@@ -18,7 +18,7 @@ const ASSET_TYPES = [
 
 const ROWS_PER_PAGE_OPTIONS = [10, 30, 50, "All"];
 
-const API_URL = "http://localhost:5000/api/assets";
+const API_URL = "https://itams-app-production.up.railway.app/api/assets";
 
 /* =========================================================
    ASSET TYPE PREFIX
