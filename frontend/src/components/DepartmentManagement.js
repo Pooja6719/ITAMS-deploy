@@ -490,9 +490,6 @@ const DepartmentManagement = ({
 
       // Reset search and show all departments
       setSearch("");
-      setSearchApplied("");
-      setSearchError("");
-      setSearchTouched(false);
 
       setSuccessMessage("✅ Department added successfully!");
     } catch (error) {
@@ -775,7 +772,6 @@ const DepartmentManagement = ({
                 )}
 
               </tbody>
-
             </table>
 
           </div>
