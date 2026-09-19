@@ -357,12 +357,20 @@ const ReportMaintenance = ({
   const [successMessage, setSuccessMessage] = useState("");
   const [serverError, setServerError] = useState("");
 
+  // Success banner clears itself after a few seconds instead of sitting
+  // there until the next submit overwrites it.
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = setTimeout(() => setSuccessMessage(""), 3500);
+    return () => clearTimeout(timer);
+  }, [successMessage]);
+
   // =====================================================
   // LOAD REPORTS FROM BACKEND
   // =====================================================
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("https://itams-app-production.up.railway.app/api/maintenance", {
+    fetch("http://localhost:5000/api/maintenance", {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -450,7 +458,7 @@ const ReportMaintenance = ({
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("https://itams-app-production.up.railway.app/api/maintenance", {
+      const response = await fetch("http://localhost:5000/api/maintenance", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -484,7 +492,7 @@ const ReportMaintenance = ({
       setSuccessMessage("✅ Maintenance request submitted successfully!");
 
       // Reload reports list
-      const refreshResp = await fetch("https://itams-app-production.up.railway.app/api/maintenance", {
+      const refreshResp = await fetch("http://localhost:5000/api/maintenance", {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       });
       const refreshData = await refreshResp.json();

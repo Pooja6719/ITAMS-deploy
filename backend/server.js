@@ -17,23 +17,48 @@ const inventoryRoutes = require("./src/routes/inventoryRoutes");
 
 const app = express();
 
-// Every real hosting platform (Vercel, Render, Railway, etc.) sits behind a
-// reverse proxy that adds an X-Forwarded-For header. Without telling Express
-// to trust that proxy, express-rate-limit refuses to trust the header and
-// throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR on every rate-limited request —
-// this never shows up locally since there's no proxy in front of dev.
+// Trust Railway's reverse proxy
 app.set("trust proxy", 1);
 
-// "".split(",") returns [""], not [] — without .filter(Boolean) an unset
-// CLIENT_ORIGIN would leave allowedOrigins truthy with a single empty-string
-// entry, so cors() would whitelist only "" instead of falling back to "*",
-// silently rejecting every real request from an actual deployed frontend.
-const allowedOrigins = (process.env.CLIENT_ORIGIN || "").split(",").map((s) => s.trim()).filter(Boolean);
-app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : "*", credentials: true }));
+// Allowed frontend origins from Railway environment variable
+const allowedOrigins = (process.env.CLIENT_ORIGIN || "")
+  .split(",")
+  .map((s) => s.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+// CORS configuration
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests without an Origin header
+      // (for example, server-to-server requests)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Allow the deployed frontend
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Reject unknown origins
+      return callback(null, false);
+    },
+    credentials: true
+  })
+);
+
 app.use(express.json());
 
-app.get("/api/health", (req, res) => res.json({ success: true, message: "ITAMS API is running" }));
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    message: "ITAMS API is running"
+  });
+});
 
+// Routes
 app.use("/api", authRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/departments", departmentRoutes);
@@ -43,13 +68,20 @@ app.use("/api/asset-requests", assetRequestRoutes);
 app.use("/api/asset-assignments", assetAssignmentRoutes);
 app.use("/api/inventory", inventoryRoutes);
 
+// Error handling
 app.use(notFound);
 app.use(errorHandler);
 
+// Port
 const PORT = process.env.PORT || 5000;
 
+// Start server
 (async () => {
   await testConnection();
-  app.listen(PORT, () => console.log(`🚀 ITAMS API listening on port ${PORT}`));
+
+  app.listen(PORT, () => {
+    console.log(`🚀 ITAMS API listening on port ${PORT}`);
+  });
+
   verifyEmailTransport();
 })();

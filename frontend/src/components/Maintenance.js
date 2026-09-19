@@ -11,6 +11,14 @@ const Maintenance = ({
 
   const [statusMessage, setStatusMessage] = useState("");
   const [statusMessageIsError, setStatusMessageIsError] = useState(false);
+
+  // Status banner clears itself after a few seconds instead of sitting
+  // there until the next action overwrites it.
+  useEffect(() => {
+    if (!statusMessage) return;
+    const timer = setTimeout(() => setStatusMessage(""), 3500);
+    return () => clearTimeout(timer);
+  }, [statusMessage]);
   const [pendingConfirm, setPendingConfirm] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [inProgressTickets, setInProgressTickets] = useState([]);
@@ -34,7 +42,7 @@ const Maintenance = ({
       };
 
       const resp = await fetch(
-        "https://itams-app-production.up.railway.app/api/maintenance",
+        "http://localhost:5000/api/maintenance",
         { headers }
       );
 
@@ -109,7 +117,7 @@ const Maintenance = ({
       const token = localStorage.getItem("token");
 
       const resp = await fetch(
-        `https://itams-app-production.up.railway.app/api/maintenance/${requestId}/status`,
+        `http://localhost:5000/api/maintenance/${requestId}/status`,
         {
           method: "PATCH",
           headers: {

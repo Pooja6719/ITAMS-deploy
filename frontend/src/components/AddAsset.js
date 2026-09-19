@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./AddAsset.css";
 
-const API_URL = "https://itams-app-production.up.railway.app/api";
+const API_URL = "http://localhost:5000/api";
 
 const AddAsset = ({
   username = "username",
@@ -425,6 +425,14 @@ const AddAsset = ({
 
   const [successMessage, setSuccessMessage] = useState("");
   const [apiError, setApiError] = useState("");
+
+  // Success banner clears itself after a few seconds instead of sitting
+  // there until the next submit overwrites it.
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = setTimeout(() => setSuccessMessage(""), 3500);
+    return () => clearTimeout(timer);
+  }, [successMessage]);
 
   // =====================================================
   // LOADING
