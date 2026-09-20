@@ -1,768 +1,843 @@
 import React, { useState, useEffect } from "react";
-import "./AssetAssignment.css";
+import "./AddEmployee.css";
 
-const ROWS_OPTIONS = [10, 30, 50, "All"];
+// Designations are scoped per department - a Finance employee shouldn't
+// be offered "Software Developer", an IT employee shouldn't be offered
+// "Accountant", etc. Keep this in sync with the identical mapping in
+// UpdateEmployee.js. Departments themselves come from the real
+// departments table (see the useEffect below) so a department added via
+// Department Management shows up here immediately; any department not
+// covered by this curated map falls back to GENERIC_DESIGNATIONS.
+const DESIGNATIONS_BY_DEPARTMENT = {
+  IT: [
+    "Software Developer",
+    "Senior Developer",
+    "System Administrator",
+    "QA Engineer",
+    "DevOps Engineer",
+    "Technical Lead",
+    "IT Manager",
+  ],
+  HR: [
+    "HR Executive",
+    "Recruiter",
+    "HR Generalist",
+    "Talent Acquisition Specialist",
+    "HR Manager",
+  ],
+  Finance: [
+    "Accountant",
+    "Financial Analyst",
+    "Accounts Executive",
+    "Auditor",
+    "Finance Manager",
+  ],
+  Marketing: [
+    "Marketing Executive",
+    "Content Strategist",
+    "SEO Specialist",
+    "Brand Manager",
+    "Marketing Manager",
+  ],
+  Sales: [
+    "Sales Executive",
+    "Account Executive",
+    "Business Development Executive",
+    "Sales Manager",
+  ],
+  Operations: [
+    "Operations Executive",
+    "Logistics Coordinator",
+    "Process Analyst",
+    "Operations Manager",
+  ],
+  "Software Development": [
+    "Software Developer",
+    "Senior Developer",
+    "Backend Developer",
+    "Frontend Developer",
+    "Full Stack Developer",
+    "Software Development Manager",
+  ],
+};
 
-// ==========================================
-// INITIAL DATA
-// Employee ID format: YYMMDD + 3 digits
-// ==========================================
-
-const INITIAL_PENDING = [
-  {
-    requestId: "AR001",
-    employeeId: "260808001",
-    employeeName: "Rahul Sharma",
-    department: "IT",
-    assetType: "Laptop",
-    purpose: "Development Work",
-    requiredDate: "10-08-2026",
-    approvalDate: "08-08-2026",
-  },
-  {
-    requestId: "AR004",
-    employeeId: "260808004",
-    employeeName: "Ananya Reddy",
-    department: "HR",
-    assetType: "Monitor",
-    purpose: "New Employees",
-    requiredDate: "12-08-2026",
-    approvalDate: "09-08-2026",
-  },
-  {
-    requestId: "AR006",
-    employeeId: "260808007",
-    employeeName: "Arjun Rao",
-    department: "Finance",
-    assetType: "Printer",
-    purpose: "Office Work",
-    requiredDate: "14-08-2026",
-    approvalDate: "10-08-2026",
-  },
+const GENERIC_DESIGNATIONS = [
+  "Executive",
+  "Senior Executive",
+  "Team Lead",
+  "Manager",
 ];
 
-// ==========================================
-// ASSIGNMENT HISTORY
-// ==========================================
+const AddEmployee = ({ username = "username", onLogout, onBack }) => {
+  const [employeeName, setEmployeeName] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
+  const [email, setEmail] = useState("");
+  const [department, setDepartment] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dateOfJoining, setDateOfJoining] = useState("");
+  const [departments, setDepartments] = useState([]);
 
-const INITIAL_HISTORY = [
-  {
-    assignmentId: "ASG001",
-    requestId: "AR002",
-    employeeId: "260808002",
-    employeeName: "Sneha Patel",
-    assetType: "Laptop",
-    assetNameId: "Dell Latitude 5420 (AST1001)",
-    assignedDate: "09-08-2026",
-    status: "Assigned",
-  },
-  {
-    assignmentId: "ASG002",
-    requestId: "AR003",
-    employeeId: "260808003",
-    employeeName: "Vikram Singh",
-    assetType: "Keyboard",
-    assetNameId: "Logitech K120 (AST2007)",
-    assignedDate: "10-08-2026",
-    status: "Assigned",
-  },
-  {
-    assignmentId: "ASG003",
-    requestId: "AR005",
-    employeeId: "260808005",
-    employeeName: "Priya Nair",
-    assetType: "Monitor",
-    assetNameId: 'HP 24" Monitor (AST3004)',
-    assignedDate: "11-08-2026",
-    status: "Assigned",
-  },
-];
-
-let assignCounter = INITIAL_HISTORY.length + 1;
-
-// ==========================================
-// MAIN COMPONENT
-// ==========================================
-
-const AssetAssignment = ({
-  username = "username",
-  onLogout,
-  onBack,
-  onSidebarNavigate,
-}) => {
-  const [activeSidebar, setActiveSidebar] =
-    useState("asset-assignment");
-
-  // Live filter - the pending/history tables narrow as this changes, no
-  // Search button/Enter needed.
-  const [searchEmpId, setSearchEmpId] = useState("");
-
-  // Table data — loaded from backend
-  const [pending, setPending] = useState([]);
-  const [history, setHistory] = useState([]);
-
-  // Load on mount
-  useEffect(() => { loadData(); }, []); // eslint-disable-line
-
-  const loadData = async () => {
-    const token = localStorage.getItem("token");
-    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-    try {
-      const [pendResp, histResp] = await Promise.all([
-        fetch("https://itams-app-production.up.railway.app/api/asset-assignments/pending", { headers }),
-        fetch("https://itams-app-production.up.railway.app/api/asset-assignments/history", { headers }),
-      ]);
-      const pendData = await pendResp.json();
-      const histData = await histResp.json();
-      if (pendData.success) {
-        setPending(
-          (pendData.pending || []).map((r) => ({
-            requestId: r.request_id,
-            employeeId: r.employee_id,
-            employeeName: r.employee_name || "-",
-            department: r.department || "-",
-            assetType: r.asset_type,
-            purpose: r.purpose,
-            requiredDate: r.required_date
-              ? new Date(r.required_date).toLocaleDateString("en-GB").replace(/\//g, "-") : "-",
-            approvalDate: r.approval_date
-              ? new Date(r.approval_date).toLocaleDateString("en-GB").replace(/\//g, "-") : "-",
-          }))
-        );
-      }
-      if (histData.success) {
-        setHistory(
-          (histData.history || []).map((h) => ({
-            assignmentId: h.assignment_id,
-            requestId: h.request_id,
-            employeeId: h.employee_id,
-            employeeName: h.employee_name || "-",
-            assetType: h.asset_type || "-",
-            assetNameId: h.asset_name_id || "-",
-            assignedDate: h.assigned_date
-              ? new Date(h.assigned_date).toLocaleDateString("en-GB").replace(/\//g, "-") : "-",
-            status: h.status,
-          }))
-        );
-      }
-    } catch (err) { console.error("Load assignment data error:", err); }
-  };
-
-  // Rows
-  const [pendingRows, setPendingRows] = useState(10);
-  const [historyRows, setHistoryRows] = useState(10);
-
-  // Assign modal
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [assignError, setAssignError] = useState("");
-  const [assignSuccess, setAssignSuccess] = useState("");
+  const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState("");
+  const [serverError, setServerError] = useState("");
 
   // Success banner clears itself after a few seconds instead of sitting
-  // there until the next assignment overwrites it.
+  // there until the next submit overwrites it.
   useEffect(() => {
-    if (!assignSuccess) return;
-    const timer = setTimeout(() => setAssignSuccess(""), 3500);
+    if (!successMessage) return;
+    const timer = setTimeout(() => setSuccessMessage(""), 3500);
     return () => clearTimeout(timer);
-  }, [assignSuccess]);
+  }, [successMessage]);
 
-  // ==========================================
-  // SIDEBAR
-  // ==========================================
+  // Departments are fetched live from the departments table (managed via
+  // Department Management) instead of a hardcoded list, so adding/removing
+  // a department there is immediately reflected in this dropdown.
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    fetch("http://localhost:5000/api/departments", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setDepartments(data.departments.map((d) => d.name));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-  const sidebarItems = [
-    {
-      id: "dashboard",
-      label: "Dashboard",
-    },
-    {
-      id: "asset-management",
-      label: "Asset Management",
-    },
-    {
-      id: "asset-assignment",
-      label: "Asset Assignment",
-    },
-    {
-      id: "request-approval",
-      label: "Request Approval",
-    },
-    {
-      id: "maintenance",
-      label: "Maintenance",
-    },
-  ];
+  // =========================================================
+  // DATE HELPERS
+  // =========================================================
 
-  const handleSidebarClick = (item) => {
-    setActiveSidebar(item.id);
+  const getToday = () => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+  };
 
-    if (onSidebarNavigate) {
-      onSidebarNavigate(item.id);
+  const getPreviousSevenDays = () => {
+    const date = getToday();
+    date.setDate(date.getDate() - 7);
+    return date;
+  };
+
+  const getDateString = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  // =========================================================
+  // EMPLOYEE NAME VALIDATION
+  // =========================================================
+
+  const validateEmployeeName = (value) => {
+    if (!value || value.length === 0) {
+      return "Employee Name is required.";
     }
+
+    if (value.startsWith(" ")) {
+      return "Employee Name cannot start with a space.";
+    }
+
+    if (value.endsWith(" ")) {
+      return "Employee Name cannot end with a space.";
+    }
+
+    if (value.trim().length < 4) {
+      return "Employee Name must contain at least 4 characters.";
+    }
+
+    if (/ {2,}/.test(value)) {
+      return "Only a single space is allowed between words.";
+    }
+
+    if (!/^[A-Za-z ]+$/.test(value)) {
+      return "Employee Name can contain only letters and spaces.";
+    }
+
+    return "";
   };
 
-  // ==========================================
-  // SEARCH INPUT CHANGE
-  // ==========================================
+  // Employee ID and Email are NOT user input - the backend generates both
+  // server-side (employeeController.js never reads either field from the
+  // request body) and returns the real values in the response. There's
+  // nothing to validate here because there's nothing for the user to type.
 
-  const handleSearchChange = (e) => {
-    setSearchEmpId(e.target.value);
+  // =========================================================
+  // DEPARTMENT VALIDATION
+  // =========================================================
+
+  const validateDepartment = (value) => {
+    if (!value) {
+      return "Please select Department.";
+    }
+
+    return "";
   };
 
-  // ==========================================
-  // FILTER
-  // Substring match against the live search text - empty search shows
-  // everything.
-  // ==========================================
+  // =========================================================
+  // DESIGNATION VALIDATION
+  // =========================================================
 
-  const filteredPending = pending.filter((r) =>
-    searchEmpId
-      ? r.employeeId.includes(searchEmpId)
-      : true
-  );
+  const validateDesignation = (value, dept) => {
+    if (!dept) {
+      return "Select Department before selecting Designation.";
+    }
 
-  const filteredHistory = history.filter((r) =>
-    searchEmpId
-      ? r.employeeId.includes(searchEmpId)
-      : true
-  );
+    if (!value) {
+      return "Designation is required.";
+    }
 
-  const displayedPending =
-    pendingRows === "All"
-      ? filteredPending
-      : filteredPending.slice(0, pendingRows);
+    const validDesignations = DESIGNATIONS_BY_DEPARTMENT[dept] || GENERIC_DESIGNATIONS;
 
-  const displayedHistory =
-    historyRows === "All"
-      ? filteredHistory
-      : filteredHistory.slice(0, historyRows);
+    if (!validDesignations.includes(value)) {
+      return "Please select a valid Designation for this Department.";
+    }
 
-  // ==========================================
-  // ASSIGN MODAL
-  // ==========================================
-
-  const openAssignModal = (req) => {
-    setSelectedRequest(req);
-    setShowAssignModal(true);
-    setAssignError("");
+    return "";
   };
 
-  const closeAssignModal = () => {
-    setShowAssignModal(false);
-    setSelectedRequest(null);
-    setAssignError("");
+  // =========================================================
+  // PHONE VALIDATION
+  // =========================================================
+
+  const validatePhone = (value) => {
+    if (!value) {
+      return "Phone Number is required.";
+    }
+
+    if (!/^\d+$/.test(value)) {
+      return "Phone Number must contain only digits.";
+    }
+
+    if (value.length !== 10) {
+      return "Phone Number must contain exactly 10 digits.";
+    }
+
+    if (!/^[6-9]\d{9}$/.test(value)) {
+      return "Enter a valid 10-digit Indian mobile number.";
+    }
+
+    return "";
   };
 
-  // ==========================================
-  // CONFIRM ASSIGNMENT — calls backend
-  // ==========================================
+  // =========================================================
+  // DATE OF JOINING VALIDATION
+  // =========================================================
 
-  const confirmAssign = async () => {
-    if (!selectedRequest) return;
+  const validateJoiningDate = (value) => {
+    if (!value) {
+      return "Date of Joining is required.";
+    }
+
+    const selectedDate = new Date(`${value}T00:00:00`);
+
+    if (Number.isNaN(selectedDate.getTime())) {
+      return "Please enter a valid Date of Joining.";
+    }
+
+    const today = getToday();
+    const sevenDaysAgo = getPreviousSevenDays();
+
+    if (selectedDate > today) {
+      return "Date of Joining cannot be a future date.";
+    }
+
+    if (selectedDate < sevenDaysAgo) {
+      return "Date of Joining can only be today or within the previous 7 days.";
+    }
+
+    return "";
+  };
+
+  // =========================================================
+  // FULL FORM VALIDATION
+  // =========================================================
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    const nameError = validateEmployeeName(employeeName);
+    if (nameError) {
+      newErrors.employeeName = nameError;
+    }
+
+    const dateError = validateJoiningDate(dateOfJoining);
+    if (dateError) {
+      newErrors.dateOfJoining = dateError;
+    }
+
+    const departmentError = validateDepartment(department);
+    if (departmentError) {
+      newErrors.department = departmentError;
+    }
+
+    const designationError = validateDesignation(designation, department);
+    if (designationError) {
+      newErrors.designation = designationError;
+    }
+
+    const phoneError = validatePhone(phone);
+    if (phoneError) {
+      newErrors.phone = phoneError;
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // =========================================================
+  // FIELD CHANGE HANDLERS
+  // =========================================================
+
+  const handleNameChange = (e) => {
+    // collapse multiple spaces into a single space
+    const value = e.target.value.replace(/ {2,}/g, " ");
+
+    setEmployeeName(value);
+
+    setErrors((prev) => ({
+      ...prev,
+      employeeName: validateEmployeeName(value),
+    }));
+  };
+
+  // No handleEmployeeIdChange / handleEmailChange - both fields are
+  // read-only, populated from the backend's response after a successful
+  // submit (see handleSubmit).
+
+  const handleDepartmentChange = (e) => {
+    const value = e.target.value;
+
+    setDepartment(value);
+
+    // The previously-selected designation almost certainly isn't valid for
+    // the new department (e.g. "Accountant" was fine under Finance but not
+    // under IT) - clear it rather than silently keep an invalid pairing.
+    setDesignation("");
+
+    setErrors((prev) => ({
+      ...prev,
+      department: validateDepartment(value),
+      designation: "",
+    }));
+  };
+
+  const handleDesignationChange = (e) => {
+    const value = e.target.value;
+
+    setDesignation(value);
+
+    setErrors((prev) => ({
+      ...prev,
+      designation: validateDesignation(value, department),
+    }));
+  };
+
+  const handlePhoneChange = (e) => {
+    const value = e.target.value.replace(/\D/g, "");
+
+    const limitedValue = value.substring(0, 10);
+
+    setPhone(limitedValue);
+
+    setErrors((prev) => ({
+      ...prev,
+      phone: limitedValue
+        ? validatePhone(limitedValue)
+        : "Phone Number is required.",
+    }));
+  };
+
+  const handleDateChange = (e) => {
+    const value = e.target.value;
+
+    setDateOfJoining(value);
+
+    const dateError = validateJoiningDate(value);
+
+    setErrors((prev) => ({
+      ...prev,
+      dateOfJoining: dateError,
+    }));
+  };
+
+  // =========================================================
+  // SUBMIT
+  // =========================================================
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
 
     try {
       const token = localStorage.getItem("token");
-      const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
-      // Fetch first available asset of the required type
-      const availResp = await fetch(
-        `https://itams-app-production.up.railway.app/api/asset-assignments/available-assets?type=${encodeURIComponent(selectedRequest.assetType)}`,
-        { headers }
+      const response = await fetch(
+        "http://localhost:5000/api/employees",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            // No employeeId/email here - the backend never reads either
+            // from the request, it generates both itself.
+            employeeName,
+            department,
+            designation,
+            phone: `+91${phone}`,
+            joiningDate: dateOfJoining,
+          }),
+        }
       );
-      const availData = await availResp.json();
-      const available = availData.assets || [];
 
-      if (available.length === 0) {
-        setAssignError(`No available ${selectedRequest.assetType} assets to assign. Please add stock first.`);
-        return;
-      }
-
-      const assetId = available[0].asset_id;
-
-      const response = await fetch("https://itams-app-production.up.railway.app/api/asset-assignments", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ requestId: selectedRequest.requestId, assetId }),
-      });
       const data = await response.json();
 
       if (!response.ok) {
-        setAssignError(data.message || "Failed to assign asset.");
+        setServerError(data.message || "Failed to add employee.");
         return;
       }
 
-      closeAssignModal();
-      setAssignSuccess(`Asset assigned successfully! Assignment ID: ${data.assignmentId} | Asset: ${assetId}`);
-      loadData();
-    } catch (err) {
-      console.error("Confirm Assign Error:", err);
-      setAssignError("Unable to connect to server.");
+      setServerError("");
+      setSuccessMessage(
+        `✅ Employee added successfully! Employee ID: ${data.employeeId} | Email: ${data.email}`
+      );
+
+      setEmployeeName("");
+      setEmployeeId("");
+      setEmail("");
+      setDepartment("");
+      setDesignation("");
+      setPhone("");
+      setDateOfJoining("");
+      setErrors({});
+    } catch (error) {
+      console.error("Add Employee Error:", error);
+
+      setServerError(
+        "Unable to connect to server. Please make sure the backend is running."
+      );
     }
   };
 
-  // ==========================================
-  // JSX
-  // ==========================================
+  // =========================================================
+  // CANCEL
+  // =========================================================
+
+  const handleCancel = () => {
+    setEmployeeName("");
+    setEmployeeId("");
+    setEmail("");
+    setDepartment("");
+    setDesignation("");
+    setPhone("");
+    setDateOfJoining("");
+    setErrors({});
+    setSuccessMessage("");
+    setServerError("");
+  };
+
+  // =========================================================
+  // DATE LIMITS
+  // =========================================================
+
+  const todayString = getDateString(getToday());
+  const minDateString = getDateString(getPreviousSevenDays());
+
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
-    <div className="asa-page-wrapper">
+    <div className="add-employee-page">
 
-      {/* ======================================
-          TOP NAVBAR
-      ====================================== */}
+      {/* HEADER */}
+      <header className="employee-header">
 
-      <nav className="asa-top-nav">
-        <div className="asa-nav-logo">
-          <span className="asa-nav-logo-title">
+        <div className="logo-section">
+
+          <div className="logo">
             ITAMS
-          </span>
+          </div>
 
-          <span className="asa-nav-logo-sub">
+          <div className="logo-subtitle">
             IT Asset Management System
-          </span>
+          </div>
+
         </div>
 
-        <div className="asa-nav-right">
-          <span className="asa-nav-username">
+        <div className="user-section">
+
+          <span>
             {username}
           </span>
 
-          <div className="asa-nav-divider" />
+          <span className="divider">
+            |
+          </span>
 
           <button
-            className="asa-logout-btn"
+            type="button"
+            className="logout-btn"
             onClick={onLogout}
           >
             Logout
           </button>
+
         </div>
-      </nav>
 
-      <div className="asa-body-wrapper">
+      </header>
 
-        {/* ====================================
-            SIDEBAR
-        ==================================== */}
+      {/* MAIN */}
+      <main className="employee-container">
 
-        <aside className="asa-sidebar">
-          {sidebarItems.map((item) => (
-            <div
-              key={item.id}
-              className={
-                "asa-sidebar-item" +
-                (activeSidebar === item.id
-                  ? " asa-sidebar-item--active"
-                  : "")
-              }
-              onClick={() =>
-                handleSidebarClick(item)
-              }
-            >
-              {item.label}
-            </div>
-          ))}
-        </aside>
+        <h1>
+          Add Employee
+        </h1>
 
-        {/* ====================================
-            MAIN CONTENT
-        ==================================== */}
+        <p className="subtitle">
+          Fill in the employee details below.
+        </p>
 
-        <main className="asa-main-content">
+        <div className="employee-card">
 
-          <h1 className="asa-page-title">
-            Asset Assignment
-          </h1>
+          <h2>
+            Employee Information
+          </h2>
 
-          <p className="asa-page-subtitle">
-            Assign approved asset requests to employees.
-          </p>
+          <hr />
 
-          {assignSuccess && (
-            <div style={{ color: "#188038", fontSize: "13px", marginBottom: "10px" }}>
-              ✅ {assignSuccess}
-            </div>
-          )}
-
-          {/* ==================================
-              SEARCH
-          ================================== */}
-
-          <div className="asa-search-section">
-
-            <label className="asa-search-label">
-              Search by Employee ID
-            </label>
-
-            <div className="asa-search-row">
-
-              <input
-                className="asa-input"
-                type="text"
-                placeholder="Type to filter by Employee ID (e.g., 260808001)"
-                value={searchEmpId}
-                onChange={handleSearchChange}
-                maxLength={9}
-              />
-
-            </div>
-
-            {/* VALIDATION HINT */}
-
-            <div className="asa-validation-hint">
-              <small>
-                Format: YYMMDD + 3 employee numbers
-                (e.g., 260808001, 260808002, 260808003)
-              </small>
-            </div>
-
-          </div>
-
-          {/* ==================================
-              PENDING REQUESTS
-          ================================== */}
-
-          <div className="asa-card">
-
-            <h2 className="asa-card-heading">
-              Request Approved Information (Not Yet Assigned)
-            </h2>
-
-            <div className="asa-table-wrapper">
-
-              <table className="asa-table">
-
-                <thead>
-                  <tr>
-                    <th>Request ID</th>
-                    <th>Employee ID</th>
-                    <th>Employee Name</th>
-                    <th>Department</th>
-                    <th>Asset Type</th>
-                    <th>Purpose</th>
-                    <th>Required Date</th>
-                    <th>Approval Date</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {displayedPending.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={9}
-                        className="asa-no-data"
-                      >
-                        No pending requests found.
-                      </td>
-                    </tr>
-                  ) : (
-                    displayedPending.map((req) => (
-                      <tr key={req.requestId}>
-
-                        <td>
-                          {req.requestId}
-                        </td>
-
-                        <td>
-                          <span className="asa-employee-id">
-                            {req.employeeId}
-                          </span>
-                        </td>
-
-                        <td>
-                          {req.employeeName}
-                        </td>
-
-                        <td>
-                          {req.department}
-                        </td>
-
-                        <td>
-                          {req.assetType}
-                        </td>
-
-                        <td>
-                          {req.purpose}
-                        </td>
-
-                        <td>
-                          {req.requiredDate}
-                        </td>
-
-                        <td>
-                          {req.approvalDate}
-                        </td>
-
-                        <td>
-
-                          <button
-                            className="asa-assign-btn"
-                            onClick={() =>
-                              openAssignModal(req)
-                            }
-                          >
-                            Assign
-                          </button>
-
-                        </td>
-
-                      </tr>
-                    ))
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-            <div className="asa-rows-right">
-
-              <span className="asa-pagination-info">
-                Showing {displayedPending.length} of{" "}
-                {filteredPending.length} requests
-              </span>
-
-              <select
-                className="asa-rows-select"
-                value={pendingRows}
-                onChange={(e) => {
-                  const value = e.target.value;
-
-                  setPendingRows(
-                    value === "All"
-                      ? "All"
-                      : Number(value)
-                  );
-                }}
-              >
-
-                {ROWS_OPTIONS.map((option) => (
-                  <option
-                    key={option}
-                    value={option}
-                  >
-                    {option}
-                  </option>
-                ))}
-
-              </select>
-
-            </div>
-
-          </div>
-
-          {/* ==================================
-              ASSIGNMENT HISTORY
-          ================================== */}
-
-          <div className="asa-card">
-
-            <h2 className="asa-card-heading">
-              Assignment History (Already Assigned Assets)
-            </h2>
-
-            <div className="asa-table-wrapper">
-
-              <table className="asa-table">
-
-                <thead>
-                  <tr>
-                    <th>Assignment ID</th>
-                    <th>Request ID</th>
-                    <th>Employee ID</th>
-                    <th>Employee Name</th>
-                    <th>Asset Type</th>
-                    <th>Asset Name / ID</th>
-                    <th>Assigned Date</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {displayedHistory.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        className="asa-no-data"
-                      >
-                        No assignment history found.
-                      </td>
-                    </tr>
-                  ) : (
-                    displayedHistory.map((entry) => (
-                      <tr key={entry.assignmentId}>
-
-                        <td>
-                          {entry.assignmentId}
-                        </td>
-
-                        <td>
-                          {entry.requestId}
-                        </td>
-
-                        <td>
-                          <span className="asa-employee-id">
-                            {entry.employeeId}
-                          </span>
-                        </td>
-
-                        <td>
-                          {entry.employeeName}
-                        </td>
-
-                        <td>
-                          {entry.assetType}
-                        </td>
-
-                        <td>
-                          {entry.assetNameId}
-                        </td>
-
-                        <td>
-                          {entry.assignedDate}
-                        </td>
-
-                        <td>
-                          <span className="asa-badge asa-badge--assigned">
-                            {entry.status}
-                          </span>
-                        </td>
-
-                      </tr>
-                    ))
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-            <div className="asa-rows-right">
-
-              <span className="asa-pagination-info">
-                Showing {displayedHistory.length} of{" "}
-                {filteredHistory.length} records
-              </span>
-
-              <select
-                className="asa-rows-select"
-                value={historyRows}
-                onChange={(e) => {
-                  const value = e.target.value;
-
-                  setHistoryRows(
-                    value === "All"
-                      ? "All"
-                      : Number(value)
-                  );
-                }}
-              >
-
-                {ROWS_OPTIONS.map((option) => (
-                  <option
-                    key={option}
-                    value={option}
-                  >
-                    {option}
-                  </option>
-                ))}
-
-              </select>
-
-            </div>
-
-          </div>
-
-          {/* ==================================
-              BACK
-          ================================== */}
-
-          <div className="asa-footer-row">
-
-            <button
-              className="asa-back-btn"
-              onClick={onBack}
-            >
-              ← Back
-            </button>
-
-          </div>
-
-        </main>
-
-      </div>
-
-      {/* ======================================
-          SIMPLE ASSIGN MODAL
-      ====================================== */}
-
-      {showAssignModal && selectedRequest && (
-
-        <div
-          className="asa-modal-overlay"
-          onClick={closeAssignModal}
-        >
-
-          <div
-            className="asa-modal"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+          <form
+            onSubmit={handleSubmit}
+            noValidate
           >
 
-            <div className="asa-modal-header">
+            <div className="form-grid">
 
-              <h2 className="asa-modal-title">
-                Assign Asset
-              </h2>
+              {/* =================================================
+                  ROW 1 - EMPLOYEE NAME
+              ================================================= */}
 
-              <button
-                className="asa-modal-close"
-                onClick={closeAssignModal}
-              >
-                ✕
-              </button>
+              <div className="form-group employee-name-field">
+
+                <label>
+                  Employee Name *
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="Enter full name"
+                  value={employeeName}
+                  onChange={handleNameChange}
+                  className={
+                    errors.employeeName
+                      ? "input-error"
+                      : ""
+                  }
+                />
+
+                {errors.employeeName && (
+                  <div className="error">
+                    {errors.employeeName}
+                  </div>
+                )}
+
+              </div>
+
+
+              {/* =================================================
+                  ROW 1 - DATE OF JOINING
+              ================================================= */}
+
+              <div className="form-group date-field">
+
+                <label>
+                  Date of Joining *
+                </label>
+
+                <input
+                  type="date"
+                  value={dateOfJoining}
+                  onChange={handleDateChange}
+                  min={minDateString}
+                  max={todayString}
+                  className={
+                    errors.dateOfJoining
+                      ? "input-error"
+                      : ""
+                  }
+                />
+
+                {errors.dateOfJoining && (
+                  <div className="error">
+                    {errors.dateOfJoining}
+                  </div>
+                )}
+
+              </div>
+
+
+              {/* =================================================
+                  ROW 2 - EMPLOYEE ID
+              ================================================= */}
+
+              <div className="form-group employee-id-field">
+
+                <label>
+                  Employee ID (Automatically Generated)
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="Assigned automatically after you submit"
+                  value={employeeId}
+                  readOnly
+                />
+
+              </div>
+
+
+              {/* =================================================
+                  ROW 2 - EMAIL
+              ================================================= */}
+
+              <div className="form-group email-field">
+
+                <label>
+                  Email (Automatically Generated)
+                </label>
+
+                <input
+                  type="email"
+                  placeholder="Assigned automatically after you submit"
+                  value={email}
+                  readOnly
+                />
+
+              </div>
+
+
+              {/* =================================================
+                  ROW 2 - PHONE
+              ================================================= */}
+
+              <div className="form-group phone-field">
+
+                <label>
+                  Phone Number *
+                </label>
+
+                <div
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                  }}
+                >
+
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: "14px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      fontSize: "16px",
+                      color: "#1f2937",
+                      zIndex: 1,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    +91
+                  </span>
+
+                  <input
+                    type="text"
+                    placeholder="Enter 10-digit number"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    maxLength={10}
+                    inputMode="numeric"
+                    style={{
+                      paddingLeft: "50px",
+                      width: "100%",
+                      boxSizing: "border-box",
+                    }}
+                    className={
+                      errors.phone
+                        ? "input-error"
+                        : ""
+                    }
+                  />
+
+                </div>
+
+                {errors.phone && (
+                  <div className="error">
+                    {errors.phone}
+                  </div>
+                )}
+
+              </div>
+
+
+              {/* =================================================
+                  ROW 3 - DEPARTMENT
+              ================================================= */}
+
+              <div className="form-group department-field">
+
+                <label>
+                  Department *
+                </label>
+
+                <select
+                  value={department}
+                  onChange={handleDepartmentChange}
+                  className={
+                    errors.department
+                      ? "input-error"
+                      : ""
+                  }
+                >
+
+                  <option value="">
+                    Select Department
+                  </option>
+
+                  {departments.map((dept) => (
+                    <option
+                      key={dept}
+                      value={dept}
+                    >
+                      {dept}
+                    </option>
+                  ))}
+
+                </select>
+
+                {errors.department && (
+                  <div className="error">
+                    {errors.department}
+                  </div>
+                )}
+
+              </div>
+
+
+              {/* =================================================
+                  ROW 3 - DESIGNATION
+              ================================================= */}
+
+              <div className="form-group designation-field">
+
+                <label>
+                  Designation *
+                </label>
+
+                <select
+                  value={designation}
+                  onChange={handleDesignationChange}
+                  disabled={!department}
+                  className={
+                    errors.designation
+                      ? "input-error"
+                      : ""
+                  }
+                >
+
+                  <option value="">
+                    {department
+                      ? "Select Designation"
+                      : "Select Department first"}
+                  </option>
+
+                  {(DESIGNATIONS_BY_DEPARTMENT[department] || GENERIC_DESIGNATIONS).map(
+                    (title) => (
+                      <option key={title} value={title}>
+                        {title}
+                      </option>
+                    )
+                  )}
+
+                </select>
+
+                {errors.designation && (
+                  <div className="error">
+                    {errors.designation}
+                  </div>
+                )}
+
+              </div>
 
             </div>
 
-            {/* NO OTHER FIELDS */}
 
-            {assignError && (
-              <div style={{ color: "#d93025", fontSize: "13px", padding: "0 16px" }}>
-                ⚠️ {assignError}
+            {successMessage && (
+              <div style={{ color: "#188038", fontSize: "13px", marginTop: "10px" }}>
+                {successMessage}
               </div>
             )}
 
-            <div className="asa-modal-footer">
+            {serverError && (
+              <div style={{ color: "#d93025", fontSize: "13px", marginTop: "10px" }}>
+                ⚠️ {serverError}
+              </div>
+            )}
+
+            {/* =================================================
+                BUTTONS
+            ================================================= */}
+
+            <div className="button-group">
 
               <button
-                className="asa-modal-cancel"
-                onClick={closeAssignModal}
+                type="submit"
+                className="save-btn"
+              >
+                Save Employee
+              </button>
+
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={handleCancel}
               >
                 Cancel
               </button>
 
-              <button
-                className="asa-modal-confirm"
-                onClick={confirmAssign}
-              >
-                Confirm Assignment
-              </button>
-
             </div>
 
-          </div>
+          </form>
 
         </div>
 
-      )}
+
+        {/* BACK */}
+
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="back-btn"
+          >
+            ← Back
+          </button>
+        )}
+
+      </main>
 
     </div>
   );
 };
 
-export default AssetAssignment;
+export default AddEmployee;
