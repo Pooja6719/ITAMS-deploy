@@ -42,7 +42,7 @@ const Maintenance = ({
       };
 
       const resp = await fetch(
-        "https://itams-app-production.up.railway.app/api/maintenance",
+        "http://itams-app-production.up.railway.app/api/maintenance",
         { headers }
       );
 
@@ -117,7 +117,7 @@ const Maintenance = ({
       const token = localStorage.getItem("token");
 
       const resp = await fetch(
-        `https://itams-app-production.up.railway.app/api/maintenance/${requestId}/status`,
+        `http://itams-app-production.up.railway.app/api/maintenance/${requestId}/status`,
         {
           method: "PATCH",
           headers: {

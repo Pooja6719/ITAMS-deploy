@@ -69,7 +69,7 @@ const EmployeeStatus = ({
           localStorage.getItem("token");
 
         const response = await fetch(
-          "https://itams-app-production.up.railway.app/api/employees",
+          "http://itams-app-production.up.railway.app/api/employees",
           {
             method: "GET",
             headers: {
@@ -197,7 +197,7 @@ const EmployeeStatus = ({
         localStorage.getItem("token");
 
       const response = await fetch(
-        `https://itams-app-production.up.railway.app/api/employees/${empId}/status`,
+        `http://itams-app-production.up.railway.app/api/employees/${empId}/status`,
         {
           method: "PATCH",
           headers: {

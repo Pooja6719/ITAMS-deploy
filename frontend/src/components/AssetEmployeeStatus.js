@@ -96,7 +96,7 @@ const EmployeeStatus = ({
     const fetchEmployees = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("https://itams-app-production.up.railway.app/api/employees", {
+        const response = await fetch("http://itams-app-production.up.railway.app/api/employees", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
