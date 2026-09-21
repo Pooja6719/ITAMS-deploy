@@ -216,7 +216,7 @@ const RequestApproval = ({
   const loadRequests = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/asset-requests", {
+      const response = await fetch("https://itams-app-production.up.railway.app/api/asset-requests", {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -357,7 +357,7 @@ const RequestApproval = ({
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/asset-requests/${selectedReq.id}/approve`,
+        `https://itams-app-production.up.railway.app/api/asset-requests/${selectedReq.id}/approve`,
         { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
       );
       const data = await response.json();
@@ -391,7 +391,7 @@ const RequestApproval = ({
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/asset-requests/${selectedReq.id}/reject`,
+        `https://itams-app-production.up.railway.app/api/asset-requests/${selectedReq.id}/reject`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
