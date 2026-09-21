@@ -557,7 +557,7 @@ export default function ForgotPassword({
 
     try {
       const response = await fetch(
-        "http://itams-app-production.up.railway.app/api/forgot-password/send-otp",
+        "http://localhost:5000/api/forgot-password/send-otp",
         {
           method: "POST",
 
@@ -689,7 +689,7 @@ export default function ForgotPassword({
 
     try {
       const response = await fetch(
-        "http://itams-app-production.up.railway.app/api/forgot-password/verify-otp",
+        "http://localhost:5000/api/forgot-password/verify-otp",
         {
           method: "POST",
 
@@ -835,7 +835,7 @@ export default function ForgotPassword({
 
     try {
       const response = await fetch(
-        "http://itams-app-production.up.railway.app/api/forgot-password/reset",
+        "http://localhost:5000/api/forgot-password/reset",
         {
           method: "POST",
 

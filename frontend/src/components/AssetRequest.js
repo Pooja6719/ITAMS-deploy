@@ -365,7 +365,7 @@ const AssetRequest = ({
           localStorage.getItem("token");
 
         const response = await fetch(
-          "http://itams-app-production.up.railway.app/api/asset-requests",
+          "http://localhost:5000/api/asset-requests",
           {
             headers: {
               "Content-Type": "application/json",
@@ -577,7 +577,7 @@ const AssetRequest = ({
         localStorage.getItem("token");
 
       const response = await fetch(
-        "http://itams-app-production.up.railway.app/api/asset-requests",
+        "http://localhost:5000/api/asset-requests",
         {
           method: "POST",
           headers: {
@@ -631,7 +631,7 @@ const AssetRequest = ({
       // Reload history
       const refreshResponse =
         await fetch(
-          "http://itams-app-production.up.railway.app/api/asset-requests",
+          "http://localhost:5000/api/asset-requests",
           {
             headers: {
               "Content-Type": "application/json",

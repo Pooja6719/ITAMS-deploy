@@ -228,7 +228,7 @@ const DepartmentManagement = ({
         const token = localStorage.getItem("token");
 
         const response = await fetch(
-          "https://itams-app-production.up.railway.app/api/departments",
+          "http://localhost:5000/api/departments",
           {
             method: "GET",
             headers: {
@@ -417,7 +417,7 @@ const DepartmentManagement = ({
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "https://itams-app-production.up.railway.app/api/departments",
+        "http://localhost:5000/api/departments",
         {
           method: "POST",
           headers: {
@@ -455,7 +455,7 @@ const DepartmentManagement = ({
 
       // Refresh departments list
       const refreshResponse = await fetch(
-        "https://itams-app-production.up.railway.app/api/departments",
+        "http://localhost:5000/api/departments",
         {
           method: "GET",
           headers: {
@@ -490,6 +490,9 @@ const DepartmentManagement = ({
 
       // Reset search and show all departments
       setSearch("");
+      setSearchApplied("");
+      setSearchError("");
+      setSearchTouched(false);
 
       setSuccessMessage("✅ Department added successfully!");
     } catch (error) {
@@ -772,6 +775,7 @@ const DepartmentManagement = ({
                 )}
 
               </tbody>
+
             </table>
 
           </div>

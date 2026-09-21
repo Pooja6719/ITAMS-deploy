@@ -95,7 +95,7 @@ const AddEmployee = ({ username = "username", onLogout, onBack }) => {
   // a department there is immediately reflected in this dropdown.
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://itams-app-production.up.railway.app/api/departments", {
+    fetch("http://localhost:5000/api/departments", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -383,7 +383,7 @@ const AddEmployee = ({ username = "username", onLogout, onBack }) => {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "http://itams-app-production.up.railway.app/api/employees",
+        "http://localhost:5000/api/employees",
         {
           method: "POST",
           headers: {

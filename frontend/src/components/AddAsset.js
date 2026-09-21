@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./AddAsset.css";
 
-const API_URL = "http://itams-app-production.up.railway.app/api";
+const API_URL = "http://localhost:5000/api";
 
 const AddAsset = ({
   username = "username",
